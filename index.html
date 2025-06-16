@@ -83,8 +83,18 @@
     }
 
     const token = result.access_token;
-    navigator.clipboard.writeText(token).catch(() => {});
-    document.getElementById("output").innerHTML = `<p><strong>Access Token (auto-copied):</strong></p><code>${token}</code><p>Loading audio analysis…</p>`;
+    navigator.clipboard.writeText(token)
+      .then(() => console.log("Token copied to clipboard"))
+      .catch(() => {
+         alert("Token NOT auto-copied. You can copy it manually below.");
+     });
+
+    document.getElementById("output").innerHTML = `
+     <p><strong>Access Token:</strong></p>
+     <textarea style="width:100%; height:100px;" readonly>${token}</textarea>
+     <p><small>Auto-copy attempted. If it failed, copy manually above.</small></p>
+     <p>Loading audio analysis…</p>
+    `;
 
     const analysis = await fetch(`https://api.spotify.com/v1/audio-analysis/${analysisTrackId}`, {
       headers: { Authorization: `Bearer ${token}` }
