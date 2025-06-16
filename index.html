@@ -52,7 +52,7 @@
       window.location = `https://accounts.spotify.com/authorize?${params.toString()}`;
     };
 
-    async function handleRedirect() {
+  async function handleRedirect() {
   const params = new URLSearchParams(window.location.search);
   const code = params.get("code");
   if (!code) return;
@@ -76,18 +76,32 @@
     });
 
     const result = await response.json();
-    console.log("Token response:", result); // Debug
+    console.log("Token response:", result); // DEBUG LINE
 
     if (!response.ok) {
       throw new Error(JSON.stringify(result, null, 2));
     }
 
-    // rest of your success logic...
+    const token = result.access_token;
+    navigator.clipboard.writeText(token).catch(() => {});
+    document.getElementById("output").innerHTML = `<p><strong>Access Token (auto-copied):</strong></p><code>${token}</code><p>Loading audio analysis…</p>`;
+
+    const analysis = await fetch(`https://api.spotify.com/v1/audio-analysis/${analysisTrackId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const analysisData = await analysis.json();
+
+    if (!analysis.ok) {
+      throw new Error(JSON.stringify(analysisData, null, 2));
+    }
+
+    document.getElementById("output").innerHTML += `<p><strong>Audio Analysis for Track ID ${analysisTrackId}:</strong></p><pre>${JSON.stringify(analysisData, null, 2)}</pre>`;
+
   } catch (error) {
     document.getElementById("output").innerHTML = `<p><strong>Error occurred:</strong></p><pre>${error.message}</pre>`;
   }
-}
-
+      
       const codeVerifier = localStorage.getItem("code_verifier");
       localStorage.removeItem("code_verifier");
       const body = new URLSearchParams({
