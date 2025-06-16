@@ -40,10 +40,14 @@
     document.getElementById("login").onclick = async () => {
       if (loginInProgress) return;
       loginInProgress = true;
+      document.getElementById("login").disabled = true;
 
       const codeVerifier = generateRandomString(128);
       const codeChallenge = await generateCodeChallenge(codeVerifier);
-      localStorage.setItem("code_verifier", codeVerifier);
+
+      if (!localStorage.getItem("code_verifier")) {
+        localStorage.setItem("code_verifier", codeVerifier);
+      }
 
       const params = new URLSearchParams({
         client_id: clientId,
@@ -63,7 +67,7 @@
       if (!code) return;
 
       const codeVerifier = localStorage.getItem("code_verifier");
-      localStorage.removeItem("code_verifier"); // Prevent stale verifiers
+      localStorage.removeItem("code_verifier");
 
       const body = new URLSearchParams({
         client_id: clientId,
@@ -81,24 +85,24 @@
         });
 
         const result = await response.json();
-        console.log("Token response:", result); // DEBUG LINE
+        console.log("Token response:", result);
 
         if (!response.ok || !result.access_token) {
-           throw new Error("Token fetch failed:\n" + JSON.stringify(result, null, 2));
+          throw new Error("Token fetch failed:\n" + JSON.stringify(result, null, 2));
         }
 
         const token = result.access_token;
         navigator.clipboard.writeText(token)
           .then(() => console.log("Token copied to clipboard"))
           .catch(() => {
-             alert("Token NOT auto-copied. You can copy it manually below.");
-         });
+            alert("Token NOT auto-copied. You can copy it manually below.");
+          });
 
         document.getElementById("output").innerHTML = `
-         <p><strong>Access Token:</strong></p>
-         <textarea style="width:100%; height:100px;" readonly>${token}</textarea>
-         <p><small>Auto-copy attempted. If it failed, copy manually above.</small></p>
-         <p>Loading audio analysis…</p>
+          <p><strong>Access Token:</strong></p>
+          <textarea style="width:100%; height:100px;" readonly>${token}</textarea>
+          <p><small>Auto-copy attempted. If it failed, copy manually above.</small></p>
+          <p>Loading audio analysis…</p>
         `;
 
         const analysis = await fetch(`https://api.spotify.com/v1/audio-analysis/${analysisTrackId}`, {
@@ -112,6 +116,9 @@
         }
 
         document.getElementById("output").innerHTML += `<p><strong>Audio Analysis for Track ID ${analysisTrackId}:</strong></p><pre>${JSON.stringify(analysisData, null, 2)}</pre>`;
+
+        // Clear query string so refreshing doesn't retry token exchange
+        window.history.replaceState({}, document.title, redirectUri);
 
       } catch (error) {
         document.getElementById("output").innerHTML = `<p><strong>Error occurred:</strong></p><pre>${error.message}</pre>`;
