@@ -6,13 +6,14 @@
   <style>
     body { font-family: sans-serif; padding: 2em; max-width: 800px; margin: auto; background: #fefefe; }
     code, pre { background: #f4f4f4; padding: 0.5em; border-radius: 4px; display: block; margin-top: 1em; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
-    button { padding: 0.5em 1em; font-size: 1em; }
+    button { padding: 0.5em 1em; font-size: 1em; margin-right: 0.5em; }
     #output { margin-top: 2em; }
   </style>
 </head>
 <body>
   <h2>Spotify PKCE Auth</h2>
   <button id="login">Login with Spotify</button>
+  <button id="retry">Retry Token Exchange</button>
   <div id="output"></div>
 
   <script>
@@ -61,10 +62,17 @@
       window.location = `https://accounts.spotify.com/authorize?${params.toString()}`;
     };
 
+    document.getElementById("retry").onclick = () => {
+      handleRedirect();
+    };
+
     async function handleRedirect() {
       const params = new URLSearchParams(window.location.search);
       const code = params.get("code");
-      if (!code) return;
+      if (!code) {
+        document.getElementById("output").innerHTML = `<p><strong>No code found in URL.</strong></p>`;
+        return;
+      }
 
       const codeVerifier = localStorage.getItem("code_verifier");
       localStorage.removeItem("code_verifier");
