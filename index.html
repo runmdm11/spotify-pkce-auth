@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Spotify PKCE Auth</title>
+  <title>Spotify PKCE Auth (State-Based)</title>
   <style>
     body { font-family: sans-serif; padding: 2em; max-width: 800px; margin: auto; background: #fefefe; }
     code, pre { background: #f4f4f4; padding: 0.5em; border-radius: 4px; display: block; margin-top: 1em; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
@@ -41,8 +41,7 @@
 
       const codeVerifier = generateRandomString(128);
       const codeChallenge = await generateCodeChallenge(codeVerifier);
-
-      sessionStorage.setItem("code_verifier", codeVerifier);
+      const encodedVerifier = btoa(codeVerifier);
 
       const params = new URLSearchParams({
         client_id: clientId,
@@ -51,6 +50,7 @@
         code_challenge_method: "S256",
         code_challenge: codeChallenge,
         scope: scope,
+        state: encodedVerifier
       });
 
       window.location = `https://accounts.spotify.com/authorize?${params.toString()}`;
@@ -63,13 +63,13 @@
     async function handleRedirect() {
       const params = new URLSearchParams(window.location.search);
       const code = params.get("code");
-      if (!code) {
-        document.getElementById("output").innerHTML = `<p><strong>No code found in URL.</strong></p>`;
+      const state = params.get("state");
+      if (!code || !state) {
+        document.getElementById("output").innerHTML = `<p><strong>Missing code or state in URL.</strong></p>`;
         return;
       }
 
-      const codeVerifier = sessionStorage.getItem("code_verifier");
-      sessionStorage.removeItem("code_verifier");
+      const codeVerifier = atob(state);
 
       const body = new URLSearchParams({
         client_id: clientId,
@@ -119,7 +119,7 @@
 
         document.getElementById("output").innerHTML += `<p><strong>Audio Analysis for Track ID ${analysisTrackId}:</strong></p><pre>${JSON.stringify(analysisData, null, 2)}</pre>`;
 
-        // Clear query string so refreshing doesn't retry token exchange
+        // Clear query string
         window.history.replaceState({}, document.title, redirectUri);
 
       } catch (error) {
