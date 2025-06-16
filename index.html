@@ -18,7 +18,7 @@
   <script>
     const clientId = "b33de46c8b5e4c5d90ba800b32ec7407";
     const redirectUri = "https://runmdm11.github.io/spotify-pkce-auth";
-    const scope = "user-read-private";
+    const scope = "user-read-private user-read-email streaming";
     const analysisTrackId = "2Foc5Q5nqNiosCNqttzHof";
 
     async function generateCodeChallenge(codeVerifier) {
@@ -78,8 +78,8 @@
     const result = await response.json();
     console.log("Token response:", result); // DEBUG LINE
 
-    if (!response.ok) {
-      throw new Error(JSON.stringify(result, null, 2));
+    if (!response.ok || !result.access_token) {
+       throw new Error("Token fetch failed:\n" + JSON.stringify(result, null, 2));
     }
 
     const token = result.access_token;
