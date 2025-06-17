@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Spotify PKCE Auth (Profile Fallback)</title>
+  <title>Spotify PKCE Auth (Dual Fetch)</title>
   <style>
     body { font-family: sans-serif; padding: 2em; max-width: 800px; margin: auto; background: #fefefe; }
     code, pre { background: #f4f4f4; padding: 0.5em; border-radius: 4px; display: block; margin-top: 1em; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
@@ -20,7 +20,7 @@
     const clientId = "b33de46c8b5e4c5d90ba800b32ec7407";
     const redirectUri = "https://runmdm11.github.io/spotify-pkce-auth";
     const scope = "user-read-private user-read-email streaming";
-    const fallbackEndpoint = "https://api.spotify.com/v1/me";
+    const analysisTrackId = "2Foc5Q5nqNiosCNqttzHof";
 
     async function generateCodeChallenge(codeVerifier) {
       const data = new TextEncoder().encode(codeVerifier);
@@ -104,20 +104,30 @@
           <p><strong>Access Token:</strong></p>
           <textarea style="width:100%; height:100px;" readonly>${token}</textarea>
           <p><small>Auto-copy attempted. If it failed, copy manually above.</small></p>
-          <p>Testing fallback request to /v1/me…</p>
+          <p>Loading user profile and audio analysis…</p>
         `;
 
-        const profile = await fetch(fallbackEndpoint, {
+        const profileRes = await fetch("https://api.spotify.com/v1/me", {
           headers: { Authorization: `Bearer ${token}` }
         });
+        const profileData = await profileRes.json();
 
-        const profileData = await profile.json();
-
-        if (!profile.ok) {
-          throw new Error("Fallback profile check failed:\n" + JSON.stringify(profileData, null, 2));
+        if (!profileRes.ok) {
+          throw new Error("Profile check failed:\n" + JSON.stringify(profileData, null, 2));
         }
 
-        document.getElementById("output").innerHTML += `<p><strong>Your Spotify Profile:</strong></p><pre>${JSON.stringify(profileData, null, 2)}</pre>`;
+        document.getElementById("output").innerHTML += `<p><strong>User Profile:</strong></p><pre>${JSON.stringify(profileData, null, 2)}</pre>`;
+
+        const analysisRes = await fetch(`https://api.spotify.com/v1/audio-analysis/${analysisTrackId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const analysisData = await analysisRes.json();
+
+        if (analysisRes.ok) {
+          document.getElementById("output").innerHTML += `<p><strong>Audio Analysis:</strong></p><pre>${JSON.stringify(analysisData, null, 2)}</pre>`;
+        } else {
+          document.getElementById("output").innerHTML += `<p><strong>Audio Analysis Failed:</strong></p><pre>${JSON.stringify(analysisData, null, 2)}</pre>`;
+        }
 
         window.history.replaceState({}, document.title, redirectUri);
 
